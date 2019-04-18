@@ -11,6 +11,7 @@ import {
 import { isRaceEffect } from "./modules/checkers";
 import logSaga from "./modules/logSaga";
 import Manager from "./modules/Manager";
+import EffectLogger from "./modules/EffectLogger";
 import { version } from "../package.json";
 
 const LOG_SAGAS_STYLE = "font-weight: bold";
@@ -89,6 +90,7 @@ const defaultConfig = {
   level: "debug",
   color: "#03A9F4",
   verbose: true,
+  enhancedLogging: false,
   rootSagaStart: false,
   effectTrigger: false,
   effectResolve: false,
@@ -99,25 +101,10 @@ const defaultConfig = {
 
 function createSagaMonitor(options = {}) {
   const config = { ...defaultConfig, ...options };
-
-  const {
-    level,
-    verbose,
-    color,
-    rootSagaStart,
-    effectTrigger,
-    effectResolve,
-    effectReject,
-    effectCancel,
-    actionDispatch
-  } = config;
-
-  let styles = [`color: ${color}`, "font-weight: bold"].join(";");
+  const effectLogger = new EffectLogger(config, console);
 
   function rootSagaStarted(desc) {
-    if (rootSagaStart) {
-      console[level]("%c Root saga started:", styles, desc.saga.name || "anonymous", desc.args);
-    }
+    effectLogger.rootSagaStarted(desc);
 
     manager.setRootEffect(
       desc.effectId,
@@ -129,9 +116,7 @@ function createSagaMonitor(options = {}) {
   }
 
   function effectTriggered(desc) {
-    if (effectTrigger) {
-      console[level]("%c effectTriggered:", styles, desc);
-    }
+    effectLogger.effectTriggered(desc);
 
     manager.set(
       desc.effectId,
@@ -143,33 +128,27 @@ function createSagaMonitor(options = {}) {
   }
 
   function effectResolved(effectId, result) {
-    if (effectResolve) {
-      console[level]("%c effectResolved:", styles, effectId, result);
-    }
+    effectLogger.effectResolved(manager.get(effectId), effectId, result);
     resolveEffect(effectId, result);
   }
 
   function effectRejected(effectId, error) {
-    if (effectReject) {
-      console[level]("%c effectRejected:", styles, effectId, error);
-    }
+    effectLogger.effectRejected(manager.get(effectId), effectId, error);
     rejectEffect(effectId, error);
   }
 
   function effectCancelled(effectId) {
-    if (effectCancel) {
-      console[level]("%c effectCancelled:", styles, effectId);
-    }
+    effectLogger.effectCancelled(manager.get(effectId), effectId);
     cancelEffect(effectId);
   }
 
   function actionDispatched(action) {
-    if (actionDispatch) {
-      console[level]("%c actionDispatched:", styles, action);
-    }
+    effectLogger.actionDispatched(action);
   }
 
   if (globalScope) {
+    const { level, verbose, color } = config;
+
     if (verbose) {
       console[level]("View Sagas by executing %c$$LogSagas()", LOG_SAGAS_STYLE, "in the console");
     }
