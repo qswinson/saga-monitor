@@ -121,7 +121,7 @@ export default class EffectLogger {
     );
     logDesc(this.logger, this.config.level, effect);
     logEffect(this.logger, this.config.level, effect);
-    this.logger[this.config.this.config.level]("%c error", errorStyles, error);
+    this.logger[this.config.level]("%c error", errorStyles, error);
     this.logger.groupEnd();
   }
 
